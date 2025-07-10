@@ -18,6 +18,17 @@ class SubscriptionSeeder extends Seeder
             'feature' => '',
             'price' => 0,
         ]);
-        
+
+        Subscription::create([
+            'plan' => 'Paid Basic',
+            'feature' => '', // feature lebih lanjut
+            'price' => 10000,
+        ]);
+
+        Subscription::create([
+            'plan' => 'Paid Premmium',
+            'feature' => '', // feature lebih lanjut
+            'price' => 50000,
+        ]);
     }
 }

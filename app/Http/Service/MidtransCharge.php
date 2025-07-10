@@ -12,9 +12,9 @@ class MidtransCharge
     private $api_link;
     private $payment_method;
     private $order_id;
-    private $gross_amount; 
-    private $bank_name; 
-    public function __construct($payment_method, $order_id, $gross_amount,$bank_name = null)
+    private $gross_amount;
+    private $bank_name;
+    public function __construct($payment_method, $order_id, $gross_amount, $bank_name = null)
     {
         $this->order_id = $order_id;
         $this->payment_method = $payment_method;
@@ -28,7 +28,7 @@ class MidtransCharge
     {
         $this->bank_name = $bank_name;
     }
-    
+
     public function charge()
     {
         try {

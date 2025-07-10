@@ -42,16 +42,19 @@ class DonationInstruction extends Mailable
      */
     public function build()
     {
+        // jika nama donatur adalah "Anonim", jangan tampilkan nama
+        $donorName = $this->donor->name === 'Anonim' ? '' : $this->donor->name;
+
         return $this->view('mail.fundraising_howto')
             ->with([
-                'donor_name' => $this->donor->name,
-                'donor_email' => $this->donor->email,
-                'amount' => $this->donation->total,
+                'donor_name'    => $donorName,
+                'donor_email'   => $this->donor->email,
+                'amount'        => $this->donation->total,
                 'campaign_name' => $this->fundraising->name,
                 'qris_image_url' => $this->donation->payment_link,
-                'expired_at' => Carbon::parse($this->donation->expiring_time)->format('H:i:s Y-M-d '),
-                'company_name' => $this->fundraising->company->name,
-                'company_logo' => $this->fundraising->company->logo ? asset('storage/' . $this->fundraising->company->logo) : null,
+                'expired_at'    => Carbon::parse($this->donation->expiring_time)->format('H:i:s Y-M-d '),
+                'company_name'  => $this->fundraising->company->name,
+                'company_logo'  => $this->fundraising->company->logo ? asset('storage/' . $this->fundraising->company->logo) : null,
             ]);
     }
 }

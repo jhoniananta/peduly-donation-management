@@ -8,10 +8,12 @@ use App\Mail\DonationSuccess;
 use App\Models\Donor;
 use App\Models\Donation;
 use App\Models\Fundraising;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use App\Response\BaseResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Service\MidtransCharge;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
@@ -111,6 +113,41 @@ class DonationController extends Controller
                 $donation->status = 'settlement';
                 $donation->payment_link = '-';
                 $donation->save();
+
+                // Load relasi untuk mendapatkan company owner
+                $donation->load('fundraising.company', 'donor');
+
+
+                $ownerId = optional($donation->fundraising->company)->id;
+
+                // Jika owner ID dari company kosong, gunakan user yang sedang login
+                if (!$ownerId) {
+                    $currentUser = Auth::user();
+                    if ($currentUser) {
+                        $ownerId = $currentUser->id;
+                    }
+                }
+
+
+                if ($ownerId) {
+                    try {
+                        $content = "🎉 Donasi baru: Rp "
+                            . number_format($donation->total, 0, ',', '.')
+                            . " dari "
+                            . ($donation->is_anonymous ? 'Donatur Anonim' : $donation->donor->name)
+                            . " untuk kampanye \"{$donation->fundraising->name}\".";
+
+                        Notification::create([
+                            'user_id' => $ownerId,
+                            'status' => 'unread',
+                            'content' => $content
+                        ]);
+                    } catch (\Throwable $e) {
+                        Log::error("Error membuat notification: " . $e->getMessage());
+                    }
+                } else {
+                    Log::warning("Owner ID tidak ditemukan, notifikasi tidak dibuat");
+                }
             }
 
             DB::commit();
@@ -164,10 +201,10 @@ class DonationController extends Controller
             $midtransApiLink = config('midtrans.MIDTRANS_API_LINK');
             $midtransUrl = rtrim($midtransApiLink, '/') . '/v2/' . $orderId . '/status';
             $response = Http::withHeaders([
-                    'Accept' => 'application/json',
-                    'Content-Type' => 'application/json',
-                    'Authorization' => 'Basic ' . $authString,
-                ])
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Basic ' . $authString,
+            ])
                 ->get($midtransUrl);
             if ($response->failed()) {
                 return BaseResponse::errorMessage('Failed to fetch status from Midtrans');
@@ -179,6 +216,26 @@ class DonationController extends Controller
                 $donation->status = $midtransStatus['transaction_status'];
                 if ($midtransStatus['transaction_status'] == 'settlement') {
                     Mail::to($donation->donor->email)->send(new DonationSuccess($donation, $donation->donor, $donation->fundraising));
+
+                    // Buat notifikasi untuk settlement
+                    $ownerId = optional($donation->fundraising->company)->id;
+                    if ($ownerId) {
+                        try {
+                            $content = "🎉 Donasi baru: Rp "
+                                . number_format($donation->total, 0, ',', '.')
+                                . " dari "
+                                . ($donation->is_anonymous ? 'Donatur Anonim' : $donation->donor->name)
+                                . " untuk kampanye \"{$donation->fundraising->name}\".";
+
+                            Notification::create([
+                                'user_id' => $ownerId,
+                                'status' => 'unread',
+                                'content' => $content
+                            ]);
+                        } catch (\Throwable $e) {
+                            Log::error("Error membuat notification settlement: " . $e->getMessage());
+                        }
+                    }
                 }
                 if ($midtransStatus['transaction_status'] == 'expire') {
                     Mail::to($donation->donor->email)->send(new DonationExpired($donation, $donation->donor, $donation->fundraising));
