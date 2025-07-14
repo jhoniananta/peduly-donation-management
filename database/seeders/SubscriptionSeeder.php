@@ -26,7 +26,7 @@ class SubscriptionSeeder extends Seeder
         ]);
 
         Subscription::create([
-            'plan' => 'Paid Premmium',
+            'plan' => 'Paid Premium',
             'feature' => '', // feature lebih lanjut
             'price' => 50000,
         ]);

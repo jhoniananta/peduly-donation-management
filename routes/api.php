@@ -12,6 +12,7 @@ use App\Http\Controllers\FundraisingController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\DonorController;
+use Illuminate\Support\Facades\Mail;
 
 Route::get('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -62,6 +63,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/plan', [SubscriptionController::class, 'createPlan'])->middleware('ability:plan.create');
 
     Route::post('/update-plan', [SubscriptionController::class, 'updatePlan'])->middleware('ability:plan.update');
+
+    // Subscription upgrade routes
+    Route::post('/subscription/upgrade', [SubscriptionController::class, 'upgradePlan']);
+    Route::post('/subscription/check-payment', [SubscriptionController::class, 'checkSubscriptionPayment']);
+    Route::get('/subscription/current', [SubscriptionController::class, 'getUserSubscription']);
+    Route::post('/subscription/cancel', [SubscriptionController::class, 'cancelSubscription']);
+    Route::post('/subscription/extend', [SubscriptionController::class, 'extendSubscription']);
+    Route::get('/subscription/history', [SubscriptionController::class, 'getSubscriptionHistory']);
 
     // Notification routes
     Route::get('/notifications', [NotificationController::class, 'index']);

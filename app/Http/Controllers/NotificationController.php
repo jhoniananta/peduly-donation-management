@@ -17,10 +17,14 @@ class NotificationController extends Controller
     {
         try {
             $user = Auth::user();
-            $notifications = Notification::where('user_id', $user->id)
-                ->orderBy('created_at', 'desc')
-                ->get();
+            Log::info('Mengambil notifikasi untuk user: ' . $user->id);
+            $limit = $request->input('limit', 10);
 
+            $notifications = Notification::where('user_id', operator: $user->company_id)
+                ->orderBy('created_at', 'desc')
+                ->limit($limit)
+                ->get();
+            Log::info('Isi notifikasi yang diambil: ' . $notifications->count());
             // konversi Collection ke array
             return BaseResponse::successData(
                 $notifications->toArray(),
@@ -39,7 +43,7 @@ class NotificationController extends Controller
     {
         try {
             $user = Auth::user();
-            $notifications = Notification::where('user_id', $user->id)
+            $notifications = Notification::where('user_id', $user->company_id)
                 ->orderBy('created_at', 'desc')
                 ->get();
 
@@ -62,7 +66,7 @@ class NotificationController extends Controller
         try {
             $user = Auth::user();
             $notification = Notification::where('id', $id)
-                ->where('user_id', $user->id)
+                ->where('user_id', $user->company_id)
                 ->firstOrFail();
 
             $notification->status = 'read';
@@ -82,7 +86,7 @@ class NotificationController extends Controller
     {
         try {
             $user = Auth::user();
-            Notification::where('user_id', $user->id)
+            Notification::where('user_id', $user->company_id)
                 ->where('status', 'unread')
                 ->update(['status' => 'read']);
 
@@ -100,7 +104,7 @@ class NotificationController extends Controller
     {
         try {
             $user = Auth::user();
-            Notification::where('user_id', $user->id)->delete();
+            Notification::where('user_id', $user->company_id)->delete();
 
             return BaseResponse::successMessage('Semua notifikasi berhasil dihapus');
         } catch (\Throwable $th) {

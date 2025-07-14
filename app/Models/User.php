@@ -11,6 +11,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\SubscriptionUser;
 
 class User extends Authenticatable
 {
@@ -67,6 +70,53 @@ class User extends Authenticatable
      */
     public function company(): BelongsTo
     {
-        return $this->belongsTo(Company::class,'company_id', 'id');
+        return $this->belongsTo(Company::class, 'company_id', 'id');
+    }
+
+    /**
+     * Get all subscription users for this user
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function subscriptionUsers(): HasMany
+    {
+        return $this->hasMany(SubscriptionUser::class);
+    }
+
+    /**
+     * Get the current active subscription for this user
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function currentSubscription(): HasOne
+    {
+        return $this->hasOne(SubscriptionUser::class)
+            ->where('status', 'active')
+            ->where(function ($query) {
+                $query->whereNull('end_date')
+                    ->orWhere('end_date', '>=', now());
+            })
+            ->latest('created_at');
+    }
+
+    /**
+     * Check if user has active subscription
+     *
+     * @return bool
+     */
+    public function hasActiveSubscription(): bool
+    {
+        return $this->subscriptionUsers()->where('status', 'active')->exists();
+    }
+
+    /**
+     * Get user's current subscription plan name
+     *
+     * @return string
+     */
+    public function getCurrentPlan(): string
+    {
+        $subscription = $this->currentSubscription()->with('subscription')->first();
+        return $subscription ? $subscription->subscription->plan : 'Free';
     }
 }

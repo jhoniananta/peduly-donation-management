@@ -42,8 +42,7 @@ class DonationController extends Controller
                 'fundraising_id' => 'required|integer|exists:fundraisings,id',
                 'wish' => 'nullable|string|max:255',
                 'total' => 'required|numeric|min:0',
-                'method' => 'required|string',
-                'bank_name' => 'nullable|string|max:255',
+                'method' => 'required|string|in:qris,gopay',
                 'is_anonymous' => 'required|boolean',
             ]);
         }
@@ -88,16 +87,10 @@ class DonationController extends Controller
             if ($request->method != 'manual') {
 
                 $midtrans = new MidtransCharge($donation->method, $donation->order_id, $donation->total);
-                if ($request->method == 'bank_transfer') {
-                    if (!$request->bank_name) {
-                        return BaseResponse::errorMessage('Bank name is required');
-                    }
-                    $midtrans->setBankName($request->bank_name);
-                }
                 $response = $midtrans->charge();
                 if (isset($response['status_code']) && $response['status_code'] == 201) {
                     // dd($response);
-                    $donation->payment_link = $request->method == 'bank_transfer' ? $response['va_numbers'][0]['va_number'] : $response['actions'][0]['url'];
+                    $donation->payment_link = $response['actions'][0]['url'];
                     $donation->expiring_time = date('Y-m-d H:i:s', strtotime($response['transaction_time'] . ' + 3 hours'));
                     $donation->status = $response['transaction_status'];
                     $donation->save();
