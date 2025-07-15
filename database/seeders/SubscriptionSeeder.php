@@ -13,11 +13,11 @@ class SubscriptionSeeder extends Seeder
      */
     public function run(): void
     {
-        Subscription::create([
-            'plan' => 'Free',
-            'feature' => '',
-            'price' => 0,
-        ]);
+        // Subscription::create([
+        //     'plan' => 'Free',
+        //     'feature' => '',
+        //     'price' => 0,
+        // ]);
 
         Subscription::create([
             'plan' => 'Paid Basic',

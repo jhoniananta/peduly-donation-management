@@ -24,13 +24,15 @@ class DonorController extends Controller
         try {
             $user = Auth::user();
 
-            // Ambil donatur berdasarkan company user yang login
-            $donors = Donor::whereHas('donations.fundraising.company', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
+            // Perbaikan query berdasarkan ERD
+            $donors = Donor::whereHas('donations', function ($query) use ($user) {
+                $query->whereHas('fundraising', function ($q) use ($user) {
+                    $q->where('company_id', $user->company_id); // Gunakan company_id dari user
+                });
             })
                 ->with(['donations' => function ($query) use ($user) {
-                    $query->whereHas('fundraising.company', function ($q) use ($user) {
-                        $q->where('user_id', $user->id);
+                    $query->whereHas('fundraising', function ($q) use ($user) {
+                        $q->where('company_id', $user->company_id);
                     })
                         ->with('fundraising');
                 }])
@@ -52,12 +54,14 @@ class DonorController extends Controller
         try {
             $user = Auth::user();
 
-            $donor = Donor::whereHas('donations.fundraising.company', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
+            $donor = Donor::whereHas('donations', function ($query) use ($user) {
+                $query->whereHas('fundraising', function ($q) use ($user) {
+                    $q->where('company_id', $user->company_id);
+                });
             })
                 ->with(['donations' => function ($query) use ($user) {
-                    $query->whereHas('fundraising.company', function ($q) use ($user) {
-                        $q->where('user_id', $user->id);
+                    $query->whereHas('fundraising', function ($q) use ($user) {
+                        $q->where('company_id', $user->company_id);
                     })
                         ->with('fundraising')
                         ->orderBy('created_at', 'desc');
@@ -90,8 +94,10 @@ class DonorController extends Controller
             $user = Auth::user();
 
             // Pastikan donatur terkait dengan company user yang login
-            $donor = Donor::whereHas('donations.fundraising.company', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
+            $donor = Donor::whereHas('donations', function ($query) use ($user) {
+                $query->whereHas('fundraising', function ($q) use ($user) {
+                    $q->where('company_id', $user->company_id);
+                });
             })->findOrFail($id);
 
             $donor->name = $request->name;
@@ -124,7 +130,7 @@ class DonorController extends Controller
 
             // Ambil donasi beserta relasi yang diperlukan
             $donation = Donation::whereHas('fundraising.company', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
+                $query->where('company_id', $user->id);
             })
                 ->with(['donor', 'fundraising.company'])
                 ->where('status', 'settlement')
@@ -137,7 +143,7 @@ class DonorController extends Controller
 
                 // Buat notifikasi
                 Notification::create([
-                    'user_id' => $user->id,
+                    'company_id' => $user->id,
                     'content' => "📧 Email bukti donasi telah dikirim ulang ke {$donation->donor->email} untuk donasi sebesar Rp "
                         . number_format($donation->total, 0, ',', '.')
                         . " pada kampanye \"{$donation->fundraising->name}\"."
@@ -162,11 +168,11 @@ class DonorController extends Controller
             $user = Auth::user();
 
             $donors = Donor::whereHas('donations.fundraising.company', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
+                $query->where('company_id', $user->id);
             })
                 ->with(['donations' => function ($query) use ($user) {
                     $query->whereHas('fundraising.company', function ($q) use ($user) {
-                        $q->where('user_id', $user->id);
+                        $q->where('company_id', $user->id);
                     })
                         ->where('status', 'settlement')
                         ->with('fundraising');
@@ -207,27 +213,33 @@ class DonorController extends Controller
             $user = Auth::user();
 
             $stats = [
-                'total_donors' => Donor::whereHas('donations.fundraising.company', function ($query) use ($user) {
-                    $query->where('user_id', $user->id);
+                'total_donors' => Donor::whereHas('donations', function ($query) use ($user) {
+                    $query->whereHas('fundraising', function ($q) use ($user) {
+                        $q->where('company_id', $user->company_id);
+                    });
                 })->count(),
 
-                'new_donors_this_month' => Donor::whereHas('donations.fundraising.company', function ($query) use ($user) {
-                    $query->where('user_id', $user->id);
+                'new_donors_this_month' => Donor::whereHas('donations', function ($query) use ($user) {
+                    $query->whereHas('fundraising', function ($q) use ($user) {
+                        $q->where('company_id', $user->company_id);
+                    });
                 })
                     ->whereMonth('created_at', date('m'))
                     ->whereYear('created_at', date('Y'))
                     ->count(),
 
                 'repeat_donors' => Donor::whereHas('donations', function ($query) use ($user) {
-                    $query->whereHas('fundraising.company', function ($q) use ($user) {
-                        $q->where('user_id', $user->id);
+                    $query->whereHas('fundraising', function ($q) use ($user) {
+                        $q->where('company_id', $user->company_id);
                     })
                         ->where('status', 'settlement');
                 }, '>', 1)->count(),
 
                 'anonymous_donors' => Donor::where('name', 'Anonim')
-                    ->whereHas('donations.fundraising.company', function ($query) use ($user) {
-                        $query->where('user_id', $user->id);
+                    ->whereHas('donations', function ($query) use ($user) {
+                        $query->whereHas('fundraising', function ($q) use ($user) {
+                            $q->where('company_id', $user->company_id);
+                        });
                     })->count(),
             ];
 

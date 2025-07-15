@@ -120,8 +120,7 @@ class DonationController extends Controller
                         $ownerId = $currentUser->id;
                     }
                 }
-
-
+                // Buat notifikasi untuk donasi manual (input dari admin perusahaan)
                 if ($ownerId) {
                     try {
                         $content = "🎉 Donasi baru: Rp "
@@ -208,6 +207,33 @@ class DonationController extends Controller
             if (isset($midtransStatus['transaction_status']) && $donation->status !== $midtransStatus['transaction_status']) {
                 $donation->status = $midtransStatus['transaction_status'];
                 if ($midtransStatus['transaction_status'] == 'settlement') {
+                    try {
+                        $donor = $donation->donor;
+
+                        // Update data donator jika diperlukan
+                        if ($donor) {
+                            // Update name jika masih kosong atau default
+                            if (empty($donor->name) || $donor->name === '-' || $donor->name === 'Anonymous') {
+                                $donor->name = $donation->donor->name ?? $donor->name;
+                            }
+
+                            // Update email jika masih kosong atau default
+                            if (empty($donor->email) || $donor->email === '-') {
+                                $donor->email = $donation->donor->email ?? $donor->email;
+                            }
+
+                            // Update phone jika masih kosong
+                            if (empty($donor->phone)) {
+                                $donor->phone = $donation->donor->phone ?? $donor->phone;
+                            }
+
+                            $donor->save();
+
+                            Log::info("Updated basic donor info for ID: {$donor->id}");
+                        }
+                    } catch (\Throwable $th) {
+                        Log::error("Error updating donor information: " . $th->getMessage());
+                    }
                     Mail::to($donation->donor->email)->send(new DonationSuccess($donation, $donation->donor, $donation->fundraising));
 
                     // Buat notifikasi untuk settlement
