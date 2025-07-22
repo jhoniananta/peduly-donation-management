@@ -42,8 +42,8 @@ class FundraisingController extends Controller
         }
 
         // Sort by status
-        if ($request->has('sortBy') && !empty($request->input('sortBy'))) {
-            $sortBy = $request->input('sortBy');
+        if ($request->has('sortByStatus') && !empty($request->input('sortByStatus'))) {
+            $sortBy = $request->input('sortByStatus');
             if (in_array($sortBy, ['aktif', 'menunggu', 'selesai'])) {
                 $query->where('status', $sortBy);
             }
@@ -207,19 +207,56 @@ class FundraisingController extends Controller
     public function showAllNews(Request $request)
     {
         try {
-            $news = FundraisingNews::with('fundraising')->get();
-            $combined_news = $news->map(function ($item) {
+            $query = FundraisingNews::with('fundraising');
+
+            // Search by fundraising name OR news content with single parameter
+            if ($request->has('searchBy') && !empty($request->input('searchBy'))) {
+                $searchTerm = $request->input('searchBy');
+                $query->where(function ($q) use ($searchTerm) {
+                    // Search in news content
+                    $q->where('news', 'like', '%' . $searchTerm . '%')
+                        // OR search in fundraising name
+                        ->orWhereHas('fundraising', function ($subQuery) use ($searchTerm) {
+                            $subQuery->where('name', 'like', '%' . $searchTerm . '%');
+                        });
+                });
+            }
+
+            // Sort by fundraising (filter by fundraising_id)
+            if ($request->has('sortByFundraise') && !empty($request->input('sortByFundraise'))) {
+                $fundraisingId = $request->input('sortByFundraise');
+                $query->where('fundraising_id', $fundraisingId);
+            }
+
+            // Pagination
+            $perPage = $request->input('perPage', 10);
+            $perPage = min($perPage, 100);
+
+            $news = $query->paginate($perPage);
+
+            // Transform the data
+            $transformedData = collect($news->items())->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'news' => $item->news,
                     'fundraising_id' => $item->fundraising_id,
                     'created_at' => $item->created_at,
                     'updated_at' => $item->updated_at,
-                    'fundraising_name' => $item->fundraising->name,
+                    'fundraising_name' => $item->fundraising->name ?? null,
                 ];
             });
-            $news_sorted = $combined_news->sortByDesc('created_at')->values()->all();
-            return BaseResponse::successData($news_sorted, 'Data fundraising berhasil diambil');
+
+            return BaseResponse::successData([
+                'data' => $transformedData,
+                'pagination' => [
+                    'currentPage' => $news->currentPage(),
+                    'perPage' => $news->perPage(),
+                    'total' => $news->total(),
+                    'lastPage' => $news->lastPage(),
+                    'from' => $news->firstItem(),
+                    'to' => $news->lastItem(),
+                ]
+            ], 'Data fundraising news berhasil diambil');
         } catch (\Throwable $th) {
             Log::error('Gagal mengambil data fundraising news : ' . $th->getMessage());
             return BaseResponse::errorMessage('Gagal mengambil data fundraising news : ' . $th->getMessage());

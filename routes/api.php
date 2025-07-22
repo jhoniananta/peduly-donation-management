@@ -59,7 +59,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/fundraising', [FundraisingController::class, 'store'])->middleware('ability:fundraising.create');
     Route::put('/fundraising/{id}', [FundraisingController::class, 'update'])->middleware('ability:fundraising.edit');
     Route::post('/fundraising-news/', [FundraisingController::class, 'storeNews'])->middleware('ability:fundraising_news.create');
-    Route::get('/fundraising-news', [FundraisingController::class, 'getNews'])->middleware('ability:fundraising_news.index');
+    Route::get('/fundraising-news', [FundraisingController::class, 'showAllNews']);
 
     Route::post('/plan', [SubscriptionController::class, 'createPlan'])->middleware('ability:plan.create');
 
