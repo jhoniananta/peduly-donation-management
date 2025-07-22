@@ -19,6 +19,8 @@ class FundraisingController extends Controller
     {
         $user =  auth('sanctum')->user();
         $query = Fundraising::query();
+
+        // Role-based filtering
         if ($user->role === "superadmin") {
             if ($user->role === "superadmin") {
                 $query->with('company');
@@ -33,8 +35,37 @@ class FundraisingController extends Controller
             }
         }
 
-        $fundraising = $query->get();
-        return BaseResponse::successData($fundraising->toArray(), 'Data fundraising berhasil diambil');
+        // Search by fundraising name
+        if ($request->has('searchBy') && !empty($request->input('searchBy'))) {
+            $searchTerm = $request->input('searchBy');
+            $query->where('name', 'like', '%' . $searchTerm . '%');
+        }
+
+        // Sort by status
+        if ($request->has('sortBy') && !empty($request->input('sortBy'))) {
+            $sortBy = $request->input('sortBy');
+            if (in_array($sortBy, ['aktif', 'menunggu', 'selesai'])) {
+                $query->where('status', $sortBy);
+            }
+        }
+
+        // Pagination
+        $perPage = $request->input('perPage', 10);
+        $perPage = min($perPage, 100);
+
+        $fundraising = $query->paginate($perPage);
+
+        return BaseResponse::successData([
+            'data' => $fundraising->items(),
+            'pagination' => [
+                'currentPage' => $fundraising->currentPage(),
+                'perPage' => $fundraising->perPage(),
+                'total' => $fundraising->total(),
+                'lastPage' => $fundraising->lastPage(),
+                'from' => $fundraising->firstItem(),
+                'to' => $fundraising->lastItem(),
+            ]
+        ], 'Data fundraising berhasil diambil');
     }
     public function store(Request $request)
     {
@@ -170,6 +201,28 @@ class FundraisingController extends Controller
             //throw $th;
             Log::error('Gagal mengambil data fundraising : ' . $th->getMessage());
             return BaseResponse::errorMessage('Gagal mengambil data fundraising : ' . $th->getMessage());
+        }
+    }
+
+    public function showAllNews(Request $request)
+    {
+        try {
+            $news = FundraisingNews::with('fundraising')->get();
+            $combined_news = $news->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'news' => $item->news,
+                    'fundraising_id' => $item->fundraising_id,
+                    'created_at' => $item->created_at,
+                    'updated_at' => $item->updated_at,
+                    'fundraising_name' => $item->fundraising->name,
+                ];
+            });
+            $news_sorted = $combined_news->sortByDesc('created_at')->values()->all();
+            return BaseResponse::successData($news_sorted, 'Data fundraising berhasil diambil');
+        } catch (\Throwable $th) {
+            Log::error('Gagal mengambil data fundraising news : ' . $th->getMessage());
+            return BaseResponse::errorMessage('Gagal mengambil data fundraising news : ' . $th->getMessage());
         }
     }
 }
