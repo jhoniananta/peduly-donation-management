@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\Fundraising;
-use App\Response\BaseResponse;
 use Illuminate\Http\Request;
+use App\Response\BaseResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Log;
 
 class CompanyController extends Controller
 {
@@ -16,13 +16,59 @@ class CompanyController extends Controller
      */
     public function index(Request $request)
     {
-        //
-        if ($request->user()->hasRole('superadmin')) {
-            $companies = Company::all();
-        } else {
-            $companies = Company::find($request->user()->company_id);
+        try {
+            $user = $request->user();
+            $query = Company::query();
+
+            // Role-based filtering
+            if ($user->hasRole('superadmin')) {
+                // Superadmin can see all companies
+                // No additional filtering needed
+            } else {
+                // Non-superadmin can only see their own company
+                $query->where('id', $user->company_id);
+            }
+
+            // Search by company name, email, address or phone
+            if ($request->has('searchBy') && !empty($request->input('searchBy'))) {
+                $searchTerm = $request->input('searchBy');
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('name', 'like', '%' . $searchTerm . '%')
+                        ->orWhere('email', 'like', '%' . $searchTerm . '%')
+                        ->orWhere('address', 'like', '%' . $searchTerm . '%')
+                        ->orWhere('phone', 'like', '%' . $searchTerm . '%');
+                });
+            }
+
+            // Filter by status
+            if ($request->has('sortByStatus') && !empty($request->input('sortByStatus'))) {
+                $sortBy = $request->input('sortByStatus');
+                if (in_array($sortBy, ['pending', 'diterima', 'ditolak'])) {
+                    $query->where('status', $sortBy);
+                }
+            }
+
+            // Pagination
+            $perPage = $request->input('perPage', 10); // default 10 items per page
+            $perPage = min($perPage, 100); // limit max items per page to 100
+
+            $companies = $query->paginate($perPage);
+
+            return BaseResponse::successData([
+                'data' => $companies->items(),
+                'pagination' => [
+                    'currentPage' => $companies->currentPage(),
+                    'perPage' => $companies->perPage(),
+                    'total' => $companies->total(),
+                    'lastPage' => $companies->lastPage(),
+                    'from' => $companies->firstItem(),
+                    'to' => $companies->lastItem(),
+                ]
+            ], 'Data perusahaan berhasil diambil');
+        } catch (\Throwable $th) {
+            Log::error('Gagal mengambil data perusahaan:' . $th->getMessage());
+            return BaseResponse::errorMessage('Gagal mengambil data perusahaan: ' . $th->getMessage());
         }
-        return BaseResponse::successData($companies->toArray(), 'Data perusahaan berhasil diambil');
     }
 
     public function verification(Request $request)
