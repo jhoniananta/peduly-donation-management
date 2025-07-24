@@ -1,36 +1,50 @@
-<?php 
+<?php
+
 namespace App\Response;
 
-class BaseResponse {
-    
-    public static function successData(array $data, string $message) {
+class BaseResponse
+{
+
+    public static function successData(array $data, string $message)
+    {
         return response()->json([
             'message' => $message,
             'data' => $data
         ], status: 200);
     }
-    public static function successMessage(string $message) {
+    public static function successMessage(string $message)
+    {
         return response()->json([
             'message' => $message,
         ], status: 200);
     }
-    public static function errorMessage(string $message) {
+
+    public static function successPagination(array $data, array $pagination, string $message)
+    {
+        return response()->json([
+            'message' => $message,
+            'data' => $data,
+            'pagination' => $pagination
+        ], status: 200);
+    }
+    public static function errorMessage(string $message)
+    {
         return response()->json([
             'message' => $message,
         ], status: 500);
     }
 
-    public static function notFoundMessage(string $message) {
+    public static function notFoundMessage(string $message)
+    {
         return response()->json([
             'message' => $message,
         ], status: 404);
     }
 
-    public static function unauthorizedMessage(string $message) {
+    public static function unauthorizedMessage(string $message)
+    {
         return response()->json([
             'message' => $message,
         ], status: 401);
     }
-
 }
-

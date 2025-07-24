@@ -54,17 +54,20 @@ class CompanyController extends Controller
 
             $companies = $query->paginate($perPage);
 
-            return BaseResponse::successData([
-                'data' => $companies->items(),
-                'pagination' => [
-                    'currentPage' => $companies->currentPage(),
-                    'perPage' => $companies->perPage(),
-                    'total' => $companies->total(),
-                    'lastPage' => $companies->lastPage(),
-                    'from' => $companies->firstItem(),
-                    'to' => $companies->lastItem(),
-                ]
-            ], 'Data perusahaan berhasil diambil');
+            $pagination = [
+                'currentPage' => $companies->currentPage(),
+                'perPage' => $companies->perPage(),
+                'total' => $companies->total(),
+                'lastPage' => $companies->lastPage(),
+                'from' => $companies->firstItem(),
+                'to' => $companies->lastItem(),
+            ];
+
+            return BaseResponse::successPagination(
+                $companies->items(),
+                $pagination,
+                'Daftar perusahaan berhasil diambil'
+            );
         } catch (\Throwable $th) {
             Log::error('Gagal mengambil data perusahaan:' . $th->getMessage());
             return BaseResponse::errorMessage('Gagal mengambil data perusahaan: ' . $th->getMessage());

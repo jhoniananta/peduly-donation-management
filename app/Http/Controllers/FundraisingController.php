@@ -55,17 +55,20 @@ class FundraisingController extends Controller
 
         $fundraising = $query->paginate($perPage);
 
-        return BaseResponse::successData([
-            'data' => $fundraising->items(),
-            'pagination' => [
-                'currentPage' => $fundraising->currentPage(),
-                'perPage' => $fundraising->perPage(),
-                'total' => $fundraising->total(),
-                'lastPage' => $fundraising->lastPage(),
-                'from' => $fundraising->firstItem(),
-                'to' => $fundraising->lastItem(),
-            ]
-        ], 'Data fundraising berhasil diambil');
+        $pagination = [
+            'currentPage' => $fundraising->currentPage(),
+            'perPage' => $fundraising->perPage(),
+            'total' => $fundraising->total(),
+            'lastPage' => $fundraising->lastPage(),
+            'from' => $fundraising->firstItem(),
+            'to' => $fundraising->lastItem(),
+        ];
+
+        return BaseResponse::successPagination(
+            $fundraising->items(),
+            $pagination,
+            'Data fundraising berhasil diambil'
+        );
     }
     public function store(Request $request)
     {
@@ -246,17 +249,20 @@ class FundraisingController extends Controller
                 ];
             });
 
-            return BaseResponse::successData([
-                'data' => $transformedData,
-                'pagination' => [
-                    'currentPage' => $news->currentPage(),
-                    'perPage' => $news->perPage(),
-                    'total' => $news->total(),
-                    'lastPage' => $news->lastPage(),
-                    'from' => $news->firstItem(),
-                    'to' => $news->lastItem(),
-                ]
-            ], 'Data fundraising news berhasil diambil');
+            $pagination = [
+                'currentPage' => $news->currentPage(),
+                'perPage' => $news->perPage(),
+                'total' => $news->total(),
+                'lastPage' => $news->lastPage(),
+                'from' => $news->firstItem(),
+                'to' => $news->lastItem(),
+            ];
+
+            return BaseResponse::successPagination(
+                $transformedData->toArray(),
+                $pagination,
+                'Data fundraising news berhasil diambil'
+            );
         } catch (\Throwable $th) {
             Log::error('Gagal mengambil data fundraising news : ' . $th->getMessage());
             return BaseResponse::errorMessage('Gagal mengambil data fundraising news : ' . $th->getMessage());
