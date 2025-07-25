@@ -128,10 +128,12 @@ class DonationController extends Controller
                             . " dari "
                             . ($donation->is_anonymous ? 'Donatur Anonim' : $donation->donor->name)
                             . " untuk kampanye \"{$donation->fundraising->name}\".";
+                        $fundraisingId = $donation->fundraising->id;
 
                         Notification::create([
-                            'user_id' => $ownerId,
+                            'company_id' => $ownerId,
                             'status' => 'unread',
+                            'fundraising_id' => $fundraisingId,
                             'content' => $content
                         ]);
                     } catch (\Throwable $e) {
@@ -245,10 +247,12 @@ class DonationController extends Controller
                                 . " dari "
                                 . ($donation->is_anonymous ? 'Donatur Anonim' : $donation->donor->name)
                                 . " untuk kampanye \"{$donation->fundraising->name}\".";
+                            $fundraisingId = $donation->fundraising->id;
 
                             Notification::create([
-                                'user_id' => $ownerId,
+                                'company_id' => $ownerId,
                                 'status' => 'unread',
+                                'fundraising_id' => $fundraisingId,
                                 'content' => $content
                             ]);
                         } catch (\Throwable $e) {

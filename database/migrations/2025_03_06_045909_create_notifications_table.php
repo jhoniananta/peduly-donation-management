@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->enum('status', ['read', 'unread'])->default('unread');
             $table->text(column: 'content');
-            $table->foreignId('user_id')->constrained()->restrictOnDelete();
+            $table->foreignId('company_id')->constrained()->restrictOnDelete();
+            $table->foreignId('fundraising_id')->constrained()->restrictOnDelete();
             $table->timestamps();
         });
     }

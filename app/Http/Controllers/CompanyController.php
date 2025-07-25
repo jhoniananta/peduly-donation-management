@@ -43,7 +43,7 @@ class CompanyController extends Controller
             // Filter by status
             if ($request->has('sortByStatus') && !empty($request->input('sortByStatus'))) {
                 $sortBy = $request->input('sortByStatus');
-                if (in_array($sortBy, ['pending', 'diterima', 'ditolak'])) {
+                if (in_array($sortBy, haystack: ['menunggu', 'diterima', 'ditolak'])) {
                     $query->where('status', $sortBy);
                 }
             }
