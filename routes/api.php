@@ -34,6 +34,7 @@ Route::get('/company-find/{id}', [CompanyController::class, 'findCompany']);
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/logout', [AuthController::class, 'logout']);
     // Route::get('/user/activate', action: [AuthController::class, 'sendActivationEmail']);
     // Route::post('/user/activate', [AuthController::class, 'activateUser']);
 

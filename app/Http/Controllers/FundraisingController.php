@@ -22,17 +22,18 @@ class FundraisingController extends Controller
 
         // Role-based filtering
         if ($user->role === "superadmin") {
-            if ($user->role === "superadmin") {
-                $query->with('company');
-            } else {
-                $query->where('company_id', $user->company_id);
-            }
-        } else {
+            // Superadmin bisa melihat semua fundraising dengan informasi company
+            $query->with('company');
+
+            // Jika superadmin ingin filter berdasarkan company tertentu
             if ($request->has('company_name')) {
                 $query->whereHas('company', function ($q) use ($request) {
                     $q->where('name', $request->input('company_name'));
                 });
             }
+        } else {
+            // Admin company hanya bisa akses fundraise nya sendiri
+            $query->where('company_id', $user->company_id)->with('company');
         }
 
         // Search by fundraising name
