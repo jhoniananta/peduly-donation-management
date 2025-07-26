@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
-use Spatie\Permission\Traits\HasRoles;
 
 class FundraisingController extends Controller
 {
@@ -21,7 +20,7 @@ class FundraisingController extends Controller
         $query = Fundraising::query();
 
         // Role-based filtering
-        if ($user->role === "superadmin") {
+        if ($user->roles->contains('name', 'superadmin')) {
             // Superadmin bisa melihat semua fundraising dengan informasi company
             $query->with('company');
 
